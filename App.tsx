@@ -1,118 +1,85 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
+if (__DEV__) {
+  import('./ReactotronConfig').then(() => console.log('Reactotron Configured'));
 }
+import {STRAPI_API_URL, STRAPI_TOKEN} from '@env';
+import * as React from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {ApolloClient, ApolloProvider, InMemoryCache} from '@apollo/client';
+import CreateProgramPage from './app/screens/CreateProgramPage';
+import {HomePage} from './app/screens/HomePage';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {Icon} from '@rneui/base';
+import {UserPage} from './app/screens/User';
+import colors from './app/styles/colors';
+import {navigationRef} from './app/RootNavigation';
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+const client = new ApolloClient({
+  uri: STRAPI_API_URL,
+  headers: {
+    Authorization: `Bearer ${STRAPI_TOKEN}`,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+  cache: new InMemoryCache({
+    typePolicies: {
+      Program: {merge: true},
+    },
+  }),
 });
+
+const Tab = createBottomTabNavigator();
+
+function App() {
+  return (
+    <SafeAreaProvider>
+      <NavigationContainer ref={navigationRef}>
+        <ApolloProvider client={client}>
+          <Tab.Navigator
+            screenOptions={({route, navigation}) => ({
+              tabBarIcon: ({focused}) => {
+                if (route.name == 'Programs')
+                  return (
+                    <Icon
+                      name="list"
+                      type="material"
+                      size={30}
+                      color={focused ? colors.secondColor : 'gray'}
+                    />
+                  );
+                else if (route.name == 'Create Program')
+                  return (
+                    <Icon
+                      name="add-circle-outline"
+                      type="material"
+                      size={38}
+                      color={focused ? colors.secondColor : 'gray'}
+                    />
+                  );
+                else if (route.name == 'User')
+                  return (
+                    <Icon
+                      name="account-circle"
+                      type="material"
+                      size={30}
+                      color={focused ? colors.secondColor : 'gray'}
+                    />
+                  );
+              },
+
+              headerTitleAlign: 'center',
+              tabBarShowLabel: false,
+              headerShown: true,
+              tabBarStyle: {backgroundColor: colors.firstColor, height: 60},
+              headerStyle: {backgroundColor: colors.firstColor},
+              headerTitleStyle: {color: colors.secondColor},
+            })}>
+            <Tab.Screen name="Programs" component={HomePage} />
+            <Tab.Screen name="Create Program" component={CreateProgramPage} />
+            <Tab.Screen name="User" component={UserPage} />
+          </Tab.Navigator>
+        </ApolloProvider>
+      </NavigationContainer>
+    </SafeAreaProvider>
+  );
+}
 
 export default App;
